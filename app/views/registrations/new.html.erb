@@ -1,0 +1,29 @@
+<div class="page auth-page">
+  <header class="page-header">
+    <span class="brand">FitCheck</span>
+    <h1>Sign Up</h1>
+  </header>
+
+  <% if @user.errors.any? %>
+    <ul class="errors">
+      <% @user.errors.full_messages.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <%= form_with model: @user, url: registration_path, local: true, class: "tryon-form" do |f| %>
+    <div class="name-field">
+      <%= f.email_field :email_address, placeholder: "Email", required: true, autofocus: true %>
+    </div>
+    <div class="name-field">
+      <%= f.password_field :password, placeholder: "Password", required: true %>
+    </div>
+    <div class="name-field">
+      <%= f.password_field :password_confirmation, placeholder: "Confirm password", required: true %>
+    </div>
+    <%= f.submit "Sign Up", class: "primary-button" %>
+  <% end %>
+
+  <p class="auth-switch">Already have an account? <%= link_to "Log in", new_session_path %></p>
+</div>

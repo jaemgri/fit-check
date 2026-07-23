@@ -1,0 +1,142 @@
+<div class="page">
+  <header class="page-header">
+    <span class="brand">FitCheck</span>
+    <h1>Your New Look</h1>
+  </header>
+
+  <% if @tryon.status.in?(["processing", "pending"]) %>
+    <meta http-equiv="refresh" content="3">
+  <% end %>
+
+  <% if @tryon.status == "complete" && @tryon.result_images.attached? %>
+    <% images = @tryon.result_images.sort_by(&:created_at) %>
+    <div class="result-hero">
+      <img id="main-result" class="result-image" src="<%= rails_blob_path(images.first) %>" data-after="<%= rails_blob_path(images.first) %>">
+
+      <% if @tryon.person_photo.attached? %>
+        <div class="before-after-toggle">
+          <button type="button" class="ba-btn" data-target="before">BEFORE</button>
+          <button type="button" class="ba-btn active" data-target="after">AFTER</button>
+        </div>
+      <% end %>
+    </div>
+
+    <% if images.size > 1 %>
+      <div class="variations-row">
+        <% images.each_with_index do |img, i| %>
+          <img
+            class="variation-thumb <%= "active" if i == 0 %>"
+            src="<%= rails_blob_path(img) %>"
+            data-full="<%= rails_blob_path(img) %>"
+            data-download="<%= rails_blob_path(img, disposition: "attachment") %>">
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="action-grid">
+      <%= button_to (@tryon.favorite? ? "♥ Saved" : "Save to Wardrobe ♡"), toggle_favorite_tryon_path(@tryon), method: :patch, class: "action-btn #{"favorited" if @tryon.favorite?}" %>
+      <%= link_to "Try Another 🔄", new_tryon_path, class: "action-btn" %>
+      <button type="button" id="share-btn" class="action-btn">Share Look ↗</button>
+      <a id="download-link" class="action-btn" href="<%= rails_blob_path(images.first, disposition: "attachment") %>">Download ⬇</a>
+    </div>
+  <% elsif @tryon.status == "failed" %>
+    <p class="error-banner">Something went wrong: <%= @tryon.error_message %></p>
+    <%= button_to "Try again", regenerate_tryon_path(@tryon), method: :post, class: "primary-button" %>
+  <% else %>
+    <div class="processing">
+      <div class="spinner"></div>
+      <p id="progress-text">Analyzing photos&hellip;</p>
+    </div>
+  <% end %>
+
+  <h2 class="section-label">Inputs</h2>
+  <div class="inputs-row">
+    <%= image_tag @tryon.person_photo, class: "input-thumb" if @tryon.person_photo.attached? %>
+    <% @tryon.clothing_photos.each do |photo| %>
+      <%= image_tag photo, class: "input-thumb" %>
+    <% end %>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var steps = ["Analyzing photos&hellip;", "Generating your outfit&hellip;", "Finishing touches&hellip;"];
+    var text = document.getElementById("progress-text");
+    if (text) {
+      var i = 0;
+      setInterval(function () {
+        i = (i + 1) % steps.length;
+        text.innerHTML = steps[i];
+      }, 1400);
+    }
+
+    var mainImg = document.getElementById("main-result");
+    var downloadLink = document.getElementById("download-link");
+    var shareBtn = document.getElementById("share-btn");
+    var shareFile = null;
+
+    function refreshShareFile() {
+      if (!mainImg) return;
+      shareFile = null;
+      fetch(mainImg.src)
+        .then(function (res) { return res.blob(); })
+        .then(function (blob) {
+          shareFile = new File([blob], "fitcheck-look.png", { type: blob.type || "image/png" });
+        })
+        .catch(function () { shareFile = null; });
+    }
+
+    refreshShareFile();
+
+    var thumbs = document.querySelectorAll(".variation-thumb");
+    thumbs.forEach(function (thumb) {
+      thumb.addEventListener("click", function () {
+        thumbs.forEach(function (t) { t.classList.remove("active"); });
+        thumb.classList.add("active");
+        mainImg.src = thumb.dataset.full;
+        mainImg.dataset.after = thumb.dataset.full;
+        if (downloadLink) downloadLink.href = thumb.dataset.download;
+
+        var afterBtn = document.querySelector('.ba-btn[data-target="after"]');
+        var beforeBtn = document.querySelector('.ba-btn[data-target="before"]');
+        if (afterBtn) {
+          afterBtn.classList.add("active");
+          if (beforeBtn) beforeBtn.classList.remove("active");
+        }
+        refreshShareFile();
+      });
+    });
+
+    var baBtns = document.querySelectorAll(".ba-btn");
+    var personPhotoUrl = "<%= @tryon.person_photo.attached? ? rails_blob_path(@tryon.person_photo) : '' %>";
+    baBtns.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        baBtns.forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        if (btn.dataset.target === "before") {
+          mainImg.src = personPhotoUrl;
+        } else {
+          mainImg.src = mainImg.dataset.after;
+        }
+        refreshShareFile();
+      });
+    });
+
+    if (shareBtn) {
+      shareBtn.addEventListener("click", function () {
+        if (shareFile && navigator.canShare && navigator.canShare({ files: [shareFile] })) {
+          navigator.share({
+            files: [shareFile],
+            title: "My FitCheck look",
+            text: "Check out my look from FitCheck!"
+          }).catch(function () {});
+        } else if (navigator.share) {
+          navigator.share({ title: "My FitCheck look", url: window.location.href }).catch(function () {});
+        } else {
+          navigator.clipboard.writeText(window.location.href);
+          alert("Link copied to clipboard!");
+        }
+      });
+    }
+  });
+</script>

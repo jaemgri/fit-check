@@ -1,0 +1,22 @@
+<div class="page auth-page">
+  <header class="page-header">
+    <span class="brand">FitCheck</span>
+    <h1>Log In</h1>
+  </header>
+
+  <% if alert %>
+    <p class="flash-alert"><%= alert %></p>
+  <% end %>
+
+  <%= form_with url: session_path, method: :post, local: true, class: "tryon-form" do |f| %>
+    <div class="name-field">
+      <%= f.email_field :email_address, placeholder: "Email", required: true, autofocus: true %>
+    </div>
+    <div class="name-field">
+      <%= f.password_field :password, placeholder: "Password", required: true %>
+    </div>
+    <%= f.submit "Log In", class: "primary-button" %>
+  <% end %>
+
+  <p class="auth-switch">Don't have an account? <%= link_to "Sign up", new_registration_path %></p>
+</div>

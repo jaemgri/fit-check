@@ -1,0 +1,43 @@
+<div class="page">
+  <header class="page-header">
+    <span class="brand">FitCheck</span>
+    <h1>My Wardrobe</h1>
+  </header>
+
+  <div class="filter-pills">
+    <%= link_to "All", tryons_path, class: "filter-pill #{"active" unless params[:filter] == "favorites"}" %>
+    <%= link_to "Favorites", tryons_path(filter: "favorites"), class: "filter-pill #{"active" if params[:filter] == "favorites"}" %>
+  </div>
+
+  <% if @tryons.empty? %>
+    <div class="empty-state">
+      <p>No try-ons yet.</p>
+      <%= link_to "Create your first one", new_tryon_path, class: "primary-button" %>
+    </div>
+  <% else %>
+    <div class="gallery-grid">
+      <% @tryons.each do |tryon| %>
+        <div class="gallery-card">
+          <div class="thumb-wrap">
+            <%= link_to tryon_path(tryon), class: "gallery-thumb-link" do %>
+              <% if tryon.status == "complete" && tryon.result_images.attached? %>
+                <%= image_tag tryon.result_images.first, class: "gallery-thumb" %>
+              <% elsif tryon.status == "failed" %>
+                <div class="gallery-thumb gallery-thumb--failed">Failed</div>
+              <% else %>
+                <div class="gallery-thumb gallery-thumb--pending">Processing&hellip;</div>
+              <% end %>
+            <% end %>
+            <%= button_to toggle_favorite_tryon_path(tryon), method: :patch, class: "favorite-btn #{"active" if tryon.favorite?}" do %>
+              <%= tryon.favorite? ? "♥" : "♡" %>
+            <% end %>
+          </div>
+          <div class="gallery-footer">
+            <span class="gallery-date"><%= tryon.name.presence || tryon.created_at.strftime("%b %-d, %Y %-I:%M %p") %></span>
+            <%= button_to "Delete", tryon_path(tryon), method: :delete, data: { turbo_confirm: "Delete this try-on?" }, class: "delete-btn" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

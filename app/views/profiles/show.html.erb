@@ -1,0 +1,46 @@
+<div class="page">
+  <header class="page-header">
+    <span class="brand">FitCheck</span>
+    <h1>Profile</h1>
+  </header>
+
+  <% if notice %>
+    <p class="flash-notice"><%= notice %></p>
+  <% end %>
+
+  <div class="studio-card profile-card">
+    <div class="avatar-wrap">
+      <% if current_user.profile_photo.attached? %>
+        <%= image_tag current_user.profile_photo, class: "avatar-img" %>
+      <% else %>
+        <div class="avatar-placeholder">👤</div>
+      <% end %>
+    </div>
+    <p class="profile-email"><%= current_user.email_address %></p>
+
+    <%= form_with model: current_user, url: profile_path, method: :patch, local: true, html: { multipart: true } do |f| %>
+      <label class="file-label">
+        Change profile photo
+        <%= f.file_field :profile_photo, accept: "image/*", onchange: "this.form.requestSubmit()" %>
+      </label>
+    <% end %>
+  </div>
+
+  <div class="studio-card">
+    <h3 class="card-title">My Base Photo</h3>
+    <% if current_user.base_photo.attached? %>
+      <%= image_tag current_user.base_photo, class: "base-photo-preview" %>
+    <% else %>
+      <p class="card-caption">No base photo saved yet. It'll save automatically next time you generate a fit, or upload one here.</p>
+    <% end %>
+
+    <%= form_with model: current_user, url: profile_path, method: :patch, local: true, html: { multipart: true } do |f| %>
+      <label class="file-label">
+        <%= current_user.base_photo.attached? ? "Change base photo" : "Upload base photo" %>
+        <%= f.file_field :base_photo, accept: "image/*", onchange: "this.form.requestSubmit()" %>
+      </label>
+    <% end %>
+  </div>
+
+  <%= button_to "Log out", session_path, method: :delete, class: "action-btn" %>
+</div>
